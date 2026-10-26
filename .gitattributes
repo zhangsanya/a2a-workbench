@@ -1,0 +1,7 @@
+# 统一 LF。仓库要部署到 Linux，CRLF 会让 .sh 报 "bad interpreter"。
+* text=auto eol=lf
+*.sh   text eol=lf
+*.py   text eol=lf
+*.md   text eol=lf
+*.html text eol=lf
+*.json text eol=lf

@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>A2A 工作台</title>
+<style>
+  :root{
+    --bg:#0e1014; --panel:#15181e; --panel2:#1b1f27; --line:#262b34;
+    --text:#e6e9ef; --dim:#8b93a3; --dim2:#5d6472;
+    --blue:#3b82f6; --cyan:#22d3ee; --amber:#f59e0b; --violet:#a78bfa; --red:#f87171;
+  }
+  *{box-sizing:border-box; margin:0; padding:0}
+  html,body{height:100%}
+  body{
+    background:var(--bg); color:var(--text);
+    font:14px/1.6 system-ui,-apple-system,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+    display:flex; overflow:hidden;
+  }
+  /* ---------- 左侧成员栏 ---------- */
+  aside{
+    width:236px; flex:0 0 236px; background:var(--panel);
+    border-right:1px solid var(--line); display:flex; flex-direction:column;
+  }
+  .brand{padding:18px 16px 14px; border-bottom:1px solid var(--line)}
+  .brand h1{font-size:15px; font-weight:600; letter-spacing:.2px}
+  .brand p{font-size:11.5px; color:var(--dim2); margin-top:3px}
+  .members{flex:1; overflow-y:auto; padding:10px 8px}
+  .m{display:flex; gap:10px; align-items:flex-start; padding:8px; border-radius:8px}
+  .m.ext{border:1px dashed var(--line)}
+  .m:hover{background:var(--panel2)}
+  .av{
+    width:30px; height:30px; flex:0 0 30px; border-radius:9px;
+    display:grid; place-items:center; font-size:12px; font-weight:600;
+    color:#0b0d11; position:relative;
+  }
+  .av.dot::after{
+    content:''; position:absolute; right:-2px; bottom:-2px; width:9px; height:9px;
+    border-radius:50%; background:var(--dim2); border:2px solid var(--panel);
+  }
+  .av.dot.on::after{background:#34d399; box-shadow:0 0 0 0 rgba(52,211,153,.6); animation:pulse 1.6s infinite}
+  @keyframes pulse{70%{box-shadow:0 0 0 6px rgba(52,211,153,0)}100%{box-shadow:0 0 0 0 rgba(52,211,153,0)}}
+  .m-body{min-width:0; flex:1}
+  .m-name{font-size:13px; font-weight:500}
+  .m-desc{font-size:11px; color:var(--dim2); line-height:1.4; margin-top:2px;
+          display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden}
+  /* ---------- 主区 ---------- */
+  main{flex:1; display:flex; flex-direction:column; min-width:0}
+  header{
+    height:52px; flex:0 0 52px; display:flex; align-items:center; gap:10px;
+    padding:0 20px; border-bottom:1px solid var(--line); background:var(--panel);
+  }
+  header .t{font-weight:600; font-size:14px}
+  header .s{font-size:11.5px; color:var(--dim2)}
+  #conn{margin-left:auto; font-size:11.5px; color:var(--dim2); display:flex; align-items:center; gap:6px}
+  #conn i{width:7px; height:7px; border-radius:50%; background:#34d399; display:block}
+  #conn.bad i{background:var(--red)}
+  #feed{flex:1; overflow-y:auto; padding:20px 20px 8px; scroll-behavior:smooth}
+  .row{display:flex; gap:10px; margin-bottom:14px; align-items:flex-start}
+  .row.me{flex-direction:row-reverse}
+  .row > div:last-child{flex:1; min-width:0; display:flex; flex-direction:column; align-items:flex-start}
+  .row.me > div:last-child{align-items:flex-end}
+  .bubble{
+    max-width:min(660px,100%); background:var(--panel2); border:1px solid var(--line);
+    border-radius:12px; padding:10px 13px; font-size:13.5px;
+    white-space:pre-wrap; word-break:break-word; overflow-wrap:anywhere;
+  }
+  .row.me .bubble{background:#1d4ed8; border-color:#2563eb; color:#fff}
+  .who{font-size:11.5px; color:var(--dim); margin-bottom:4px; display:flex; gap:8px; align-items:center}
+  .who b{font-weight:600}
+  .bubble h4{font-size:13px; margin:8px 0 4px; color:var(--text)}
+  .bubble h4:first-child{margin-top:0}
+  .bubble code{background:#0b0d11; border:1px solid var(--line); border-radius:4px;
+               padding:1px 4px; font-size:12px; font-family:ui-monospace,Consolas,monospace}
+  .bubble pre{background:#0b0d11; border:1px solid var(--line); border-radius:8px;
+              padding:10px; overflow-x:auto; margin:8px 0; font-size:12px;
+              font-family:ui-monospace,Consolas,monospace; line-height:1.5}
+  .bubble pre code{background:none; border:0; padding:0}
+  .bubble strong{color:#fff; font-weight:600}
+  .bubble table{border-collapse:collapse; margin:8px 0; font-size:12.5px; max-width:100%}
+  .bubble th,.bubble td{border:1px solid var(--line); padding:5px 10px; text-align:left}
+  .bubble th{background:#0b0d11; font-weight:600; white-space:nowrap}
+  .bubble td{font-variant-numeric:tabular-nums}
+  .status{
+    font-size:12px; color:var(--dim2); padding:2px 0 2px 44px;
+    display:flex; align-items:center; gap:7px; margin:-6px 0 8px;
+  }
+  .status .spin{
+    width:9px; height:9px; border-radius:50%; border:1.5px solid var(--dim2);
+    border-top-color:transparent; animation:rot .8s linear infinite;
+  }
+  @keyframes rot{to{transform:rotate(360deg)}}
+  .sys{text-align:center; font-size:11.5px; color:var(--dim2); margin:10px 0 14px}
+  .err .bubble{border-color:#7f1d1d; background:#1f1113; color:#fecaca}
+  /* ---------- 输入区 ---------- */
+  .composer{border-top:1px solid var(--line); background:var(--panel); padding:12px 20px 16px}
+  .chips{display:flex; gap:6px; margin-bottom:9px; flex-wrap:wrap}
+  .chip{
+    font-size:11.5px; color:var(--dim); border:1px solid var(--line);
+    background:var(--panel2); padding:3px 9px; border-radius:99px; cursor:pointer;
+    transition:.15s; user-select:none;
+  }
+  .chip:hover{color:var(--text); border-color:#3a4150}
+  .box{display:flex; gap:10px; align-items:flex-end}
+  textarea{
+    flex:1; resize:none; background:var(--panel2); color:var(--text);
+    border:1px solid var(--line); border-radius:10px; padding:11px 13px;
+    font:inherit; font-size:13.5px; line-height:1.55; max-height:180px; outline:none;
+  }
+  textarea:focus{border-color:#3b4657}
+  textarea::placeholder{color:var(--dim2)}
+  button{
+    flex:0 0 auto; height:42px; padding:0 20px; border:0; border-radius:10px;
+    background:var(--blue); color:#fff; font:inherit; font-size:13.5px; font-weight:500;
+    cursor:pointer; transition:.15s;
+  }
+  button:hover{background:#2f6fe0}
+  button:disabled{background:#2a3140; color:var(--dim2); cursor:not-allowed}
+  button.ghost{
+    height:28px; padding:0 12px; background:transparent; border:1px solid var(--line);
+    color:var(--dim); font-size:12px; font-weight:400; border-radius:7px;
+  }
+  button.ghost:hover{background:var(--panel2); color:var(--text)}
+  .hint{font-size:11px; color:var(--dim2); margin-top:8px}
+  @media(max-width:820px){
+    aside{display:none}
+    .bubble{max-width:88%}
+    #feed{padding:16px 14px 8px}
+    .composer{padding:10px 14px 14px}
+  }
+</style>
+</head>
+<body>
+<aside>
+  <div class="brand">
+    <h1>A2A 工作台</h1>
+    <p>发一条任务，agent 各自认领</p>
+  </div>
+  <div class="members" id="members"></div>
+</aside>
+
+<main>
+  <header>
+    <div>
+      <div class="t"># 主群</div>
+      <div class="s" id="sub">正在连接…</div>
+    </div>
+    <button class="ghost" id="clear" title="清空群聊记录，不影响任务数据">清空</button>
+    <div id="conn"><i></i><span>在线</span></div>
+  </header>
+  <div id="feed"></div>
+  <div class="composer">
+    <div class="chips" id="chips"></div>
+    <div class="box">
+      <textarea id="input" rows="1" placeholder="发任务… 直接说不指定，@ 指定某个 agent"></textarea>
+      <button id="send">发送</button>
+    </div>
+    <div class="hint">Enter 发送 · Shift+Enter 换行 · @all 广播给所有 agent</div>
+  </div>
+</main>
+
+<script>
+const COLORS = {notes:'#22d3ee', report:'#f59e0b', qwen:'#a78bfa', muse:'#f472b6', grok:'#34d399', owner:'#3b82f6', system:'#5d6472'};
+const NAMES  = {owner:'我', system:'系统'};
+let lastId = 0, members = [], busy = false, atBottom = true;
+const feed = document.getElementById('feed');
+const input = document.getElementById('input');
+const btn = document.getElementById('send');
+
+feed.addEventListener('scroll', () => {
+  atBottom = feed.scrollHeight - feed.scrollTop - feed.clientHeight < 120;
+});
+
+function color(id){ return COLORS[id] || '#8b93a3'; }
+function nameOf(id){ return (members.find(m=>m.id===id)||{}).name || NAMES[id] || id; }
+function esc(s){ return s.replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
+
+function md(s){
+  let h = esc(s);
+  h = h.replace(/```([\s\S]*?)```/g, (_,c)=>'<pre><code>'+c.replace(/^\n|\n$/g,'')+'</code></pre>');
+  h = h.replace(/`([^`\n]+)`/g, '<code>$1</code>');
+  h = h.replace(/\*\*([^*\n]+)\*\*/g, '<strong>$1</strong>');
+  h = h.replace(/^#{1,4}\s+(.+)$/gm, '<h4>$1</h4>');
+  h = h.replace(/(?:^\|.*\|[ \t]*\n?)+/gm, block => {
+    const rows = block.trim().split('\n').map(r => r.trim().replace(/^\||\|$/g,'').split('|').map(c => c.trim()));
+    if (rows.length < 2) return block;
+    const sep = rows[1].every(c => /^:?-{2,}:?$/.test(c));
+    const head = sep ? rows[0] : null;
+    const body = sep ? rows.slice(2) : rows;
+    let t = '<table>';
+    if (head) t += '<thead><tr>' + head.map(c => '<th>' + c + '</th>').join('') + '</tr></thead>';
+    t += '<tbody>' + body.map(r => '<tr>' + r.map(c => '<td>' + c + '</td>').join('') + '</tr>').join('') + '</tbody>';
+    return t + '</table>';
+  });
+  return h;
+}
+
+function avatar(id, on){
+  const ch = nameOf(id).slice(0,1);
+  return '<div class="av dot'+(on?' on':'')+'" style="background:'+color(id)+'">'+esc(ch)+'</div>';
+}
+
+const statusEls = new Map();
+function keyOf(m){ return m.sender + '|' + (m.context_id || ''); }
+
+function render(m){
+  if(m.kind === 'status'){
+    const k = keyOf(m);
+    let el = statusEls.get(k);
+    if(!el || !el.isConnected){
+      el = document.createElement('div');
+      el.className = 'status';
+      el.innerHTML = '<span class="spin"></span><span class="txt"></span>';
+      feed.appendChild(el);
+      statusEls.set(k, el);
+    }
+    el.querySelector('.txt').textContent = m.text;
+    return;
+  }
+  if(m.kind === 'system'){
+    const d = document.createElement('div');
+    d.className = 'sys';
+    d.textContent = '— ' + m.text + ' —';
+    feed.appendChild(d);
+    return;
+  }
+  const st = statusEls.get(keyOf(m));
+  if(st){ st.remove(); statusEls.delete(keyOf(m)); }
+
+  const me = m.sender === 'owner';
+  const row = document.createElement('div');
+  row.className = 'row' + (me?' me':'') + (m.kind==='error'?' err':'');
+  const body = m.kind === 'error' ? esc(m.text) : md(m.text);
+  row.innerHTML =
+    avatar(m.sender, false) +
+    '<div>' +
+      (me ? '' : '<div class="who"><b style="color:'+color(m.sender)+'">'+esc(nameOf(m.sender))+'</b></div>') +
+      '<div class="bubble">' + body + '</div>' +
+    '</div>';
+  feed.appendChild(row);
+}
+
+function scrollDown(force){
+  if(force || atBottom) feed.scrollTop = feed.scrollHeight;
+}
+
+async function loadMembers(){
+  const r = await fetch('/chat/members').then(r=>r.json());
+  members = r.members;
+  const box = document.getElementById('members');
+  box.innerHTML = members.map(m =>
+    '<div class="m' + (m.kind === 'external' ? ' ext' : '') + '">' + avatar(m.id, false) +
+    '<div class="m-body"><div class="m-name">'+esc(m.name)+'</div>'+
+    '<div class="m-desc">'+esc(m.desc||'')+'</div></div></div>'
+  ).join('');
+  const chipIds = members.filter(m => m.kind !== 'human').map(m => m.id).concat(['all']);
+  document.getElementById('chips').innerHTML =
+    chipIds.map(a =>
+      '<span class="chip" data-a="'+a+'">@'+a+'</span>').join('');
+  document.getElementById('sub').textContent = members.length + ' 位成员 · 本地运行';
+  document.querySelectorAll('.chip').forEach(c => c.onclick = () => {
+    input.value = (input.value.replace(/\s*$/,'') + ' @' + c.dataset.a + ' ').trimStart();
+    input.focus();
+  });
+}
+
+async function poll(){
+  try{
+    const r = await fetch('/chat/messages?since=' + lastId).then(r=>r.json());
+    if(r.messages && r.messages.length){
+      const stick = atBottom;
+      r.messages.forEach(m => { render(m); lastId = Math.max(lastId, m.id); });
+      scrollDown(stick);
+    }
+    document.getElementById('conn').className = '';
+    document.querySelector('#conn span').textContent = '在线';
+  }catch(e){
+    document.getElementById('conn').className = 'bad';
+    document.querySelector('#conn span').textContent = '重连中';
+  }
+}
+
+async function send(){
+  const text = input.value.trim();
+  if(!text || busy) return;
+  busy = true; btn.disabled = true;
+  input.value = ''; input.style.height = 'auto';
+  try{
+    await fetch('/chat/send', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({text})
+    });
+    atBottom = true;
+    await poll();
+  }catch(e){
+    alert('发送失败：' + e.message);
+  }finally{
+    busy = false; btn.disabled = false; input.focus();
+  }
+}
+
+document.getElementById('clear').onclick = async () => {
+  if(!confirm('清空群聊记录？（A2A 任务数据不受影响）')) return;
+  await fetch('/chat/clear', {method:'POST'});
+  feed.innerHTML = ''; lastId = 0;
+};
+
+btn.onclick = send;
+input.addEventListener('keydown', e => {
+  if(e.key === 'Enter' && !e.shiftKey && !e.isComposing){ e.preventDefault(); send(); }
+});
+input.addEventListener('input', () => {
+  input.style.height = 'auto';
+  input.style.height = Math.min(input.scrollHeight, 180) + 'px';
+});
+
+(async function init(){
+  await loadMembers();
+  await poll();
+  scrollDown(true);
+  setInterval(poll, 1200);
+  input.focus();
+})();
+</script>
+</body>
+</html>

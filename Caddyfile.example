@@ -1,0 +1,30 @@
+# Caddy 配置：自动申请并续期 Let's Encrypt 证书
+# 放到 /etc/caddy/Caddyfile，然后 systemctl reload caddy
+#
+# 前提：域名的 A 记录已经指向本机，且 80/443 端口放行（80 用于 ACME 验证）。
+# 如果域名走了 Cloudflare 代理（橙色云），Cloudflare 的 SSL 模式要选 Full (strict)。
+
+a2a.example.com {
+	encode zstd gzip
+
+	# 反向代理到本地服务
+	reverse_proxy 127.0.0.1:8080 {
+		# 群聊前端用游标轮询，不需要长连接；但取件口可能有慢请求
+		transport http {
+			read_timeout 60s
+		}
+	}
+
+	# 访问日志（含客户端 IP，审计用）
+	log {
+		output file /var/log/caddy/a2a.log
+		format json
+	}
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "no-referrer"
+		-Server
+	}
+}

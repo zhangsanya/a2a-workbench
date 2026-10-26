@@ -1,0 +1,22 @@
+# 运行时数据
+data/
+*.db
+*.db-wal
+*.db-shm
+
+# 密钥：绝对不能进仓库
+*.key
+.muse_key
+seal-server.key
+
+# Python
+venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+
+# 编辑器 / 系统
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
